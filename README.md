@@ -6,14 +6,15 @@ Clients can use the autonomous identification server to obtain credentials at ru
 	- [Overview](#overview)
 	- [Try it out](#try-it-out)
 		- [Using a private NPM package for the entropy file](#using-a-private-npm-package-for-the-entropy-file)
+- [Storing Secrets](#storing-secrets)
+- [Client](#client)
+- [Sample Test Session](#sample-test-session)
+- [Notes](#notes)
 	- [Basic observations for secure use of this code](#basic-observations-for-secure-use-of-this-code)
 	- [The verification flow](#the-verification-flow)
 	- [The use of encryption](#the-use-of-encryption)
 	- [Use](#use)
 	- [Notes on development](#notes-on-development)
-- [Storing Secrets](#storing-secrets)
-- [Client](#client)
-- [Sample Test Session](#sample-test-session)
 
 # Server
 ## Overview
@@ -59,6 +60,132 @@ As an alternative the entropy file and server public key can be published as an 
 
 The `BUCKET_NAME` here must match that provided during deploy. This script will retrieve the keys from the S3 bucket and package them to be published to NPM.
 
+# Storing Secrets
+
+The auto-id server deployed in the [Try it out](#try-it-out) section reads credentials from AWS Secrets Manager. After deploying the server store one or more secrets in AWS Secrets Manager as follows:
+
+1. [Configure your AWS profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html). This user should have sufficient privileges to deploy the SAM application.
+1. Switch to the server directory: `cd server`
+1. Execute the store-secret.sh script: `./scripts/store-secret.sh <SECRET_ID> <SECRET_VALUE>`
+
+For AWS credentials store the access key ID and the secret key in a comma separated string as the SECRET_VALUE. For example: `./scripts/store-secret.sh my_test_secret "AWS_ACCESS_KEY_ID,SECRET_ACCESS_KEY"`
+
+**NOTE: Remember to delete any secrets from Secrets Manager when done testing.**
+
+# Client
+
+The client is a docker container that uses auto-id to retrieve AWS credentials.
+
+To run the console:
+
+1. Switch to the client directory: `cd client`
+1. Build the docker image: `docker build -t auto-id-client .`
+1. Running the container: The basic run command is `docker run -e AUTO_ID_API_ENDPOINT=<the api endpoint noted in the server deployment> -ti --entrypoint /bin/sh auto-id-client`
+	* For entropy file stored in S3 add the ENTROPY_ACCESS_ID, ENTROPY_SECRET_KEY and AUTO_ID_BUCKET environment variables: `docker run -e ENTROPY_ACCESS_ID=<AWS_KEY_ID> -e ENTROPY_SECRET_KEY=<AWS_SECRET_KEY> -e AUTO_ID_BUCKET=<THE_AUTO_ID_BUCKET_NAME> ...`
+	* For entropy file stored in NPM add the NPM_TOKEN environment variable: `docker run -e NPM_TOKEN=<AWS_KEY_ID> ...`
+1. The docker contains presents the Linux shell prompt
+1. Retrieve the auto-id keys: `./scripts/get-keys.sh`
+1. Retrieve the AWS credentials: `./scripts/get-aws-credentials.sh <SECRET_ID>`. Use the same secret ID used when storing the secret during server deployment. This will run `aws configure` to setup a default profile with the retrieved credentials.
+1. Run aws commands to confirm the credentials have been configured correctly.
+
+# Sample Test Session
+
+## Step 1 - Build the server docker image
+```shell
+autonomous-identification $ cd server
+server $ docker build -t auto-id .
+---->8----
+```
+
+## Step 2 - Run the server container to deploy the server to AWS
+```shell
+server $ docker run \
+  -e AWS_ACCESS_KEY_ID=************ \
+  -e AWS_SECRET_ACCESS_KEY=***************** \
+  -e AUTO_ID_BUCKET=auto-id-test \
+  -e AUTO_ID_STACK_NAME=auto-id-test \
+  -e ACTION=deploy auto-id
+---->8----
+{
+  "OutputKey": "APIGatewayEndpoint",
+  "OutputValue": "https://**********.execute-api.ap-southeast-2.amazonaws.com",
+  "Description": "API Gateway endpoint"
+}
+---->8----
+server $ #
+server $ # TAKE NOTE OF THE OutputValue above. This is the AUTO_ID_API_ENDPOINT value.
+server $ #
+```
+
+## Step 3 - Store a sample secret in Secrets Manager
+```shell
+server $ ./scripts/store-secret.sh test-secret-id "test-secret-value1,test-secret-value2" 
+---->8----
+{
+    "VersionId": "8f467d4a-9ecb-4262-a96e-5bec132d3bf4", 
+    "Name": "test-secret-id", 
+    "ARN": "arn:aws:secretsmanager:ap-southeast-2:120030542417:secret:test-secret-id-aCntKb"
+}
+---->8----
+```
+
+## Step 4 - Build the client docker image
+```shell
+server $ cd ../client
+client $ docker build -t auto-id-client .
+---->8----
+```
+
+## Step 5 - Run the client container in interactive mode
+```shell
+client $ docker run \
+  -e AUTO_ID_API_ENDPOINT=https://********.execute-api.ap-southeast-2.amazonaws.com \
+  -e AUTO_ID_BUCKET=auto-id-test \
+  -e ENTROPY_ACCESS_ID=******** \
+  -e ENTROPY_SECRET_KEY=******** \
+  -ti --entrypoint /bin/sh auto-id-client
+```
+
+## Step 6 - Retrieve the auto-id entropy file and server public key
+```shell
+/auto-id-client # ./scripts/get-keys.sh
+download: s3://auto-id-public-repo-test/info2048.bin to ./info2048.bin
+download: s3://auto-id-public-repo-test/public.pem to ./public.pem
+```
+
+## Step 7 - Request credentials from the auto-id server
+```shell
+/auto-id-client # ./scripts/get-aws-credentials.sh test-secret-id
+```
+
+## Step 8 - Show a profile has been configured
+```shell
+/auto-id-client # cat ~/.aws/credentials 
+[default]
+aws_access_key_id = test-secret-value1
+aws_secret_access_key = test-secret-value2
+/auto-id-client #
+/auto-id-client # # Given valid AWS credentials you could now run AWS CLI commands sucessfully.
+/auto-id-client #
+/auto-id-client # exit
+```
+
+## Step 9 - Destroy the server stack
+```shell
+client $ cd ../server
+server $ docker run \
+  -e AWS_ACCESS_KEY_ID=******** \
+  -e AWS_SECRET_ACCESS_KEY=******** \
+  -e AUTO_ID_BUCKET=auto-id-test \
+  -e AUTO_ID_STACK_NAME=auto-id-test \
+  -e ACTION=destroy auto-id
+server $ #
+server $ # Don't forget to delete any secrets you are not going to be using from Secrets Manager.
+server $ #
+```
+
+# Notes
+
 ## Basic observations for secure use of this code
 1. The client should have access to an entropy file, which must remain secret. The client also has the public key of the server.
 2. The server has a private key and an *independent* copy of the entropy file, which is used to verify that the client actually has this file.
@@ -103,95 +230,3 @@ The version of python used for development should be 3.6 to avoid any unexpected
 
 The cryptographic library used is Pycryptodome, version 3.6.6. 
 
-# Storing Secrets
-
-The auto-id server deployed in the [Try it out](#try-it-out) section reads credentials from AWS Secrets Manager. After deploying the server store one or more secrets in AWS Secrets Manager as follows:
-
-1. [Configure your AWS profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html). This user should have sufficient privileges to deploy the SAM application.
-1. Switch to the server directory: `cd server`
-1. Execute the store-secret.sh script: `./scripts/store-secret.sh <SECRET_ID> <SECRET_VALUE>`
-
-For AWS credentials store the access key ID and the secret key in a comma separated string as the SECRET_VALUE. For example: `./scripts/store-secret.sh my_test_secret "AWS_ACCESS_KEY_ID,SECRET_ACCESS_KEY"`
-
-**NOTE: Remember to delete any secrets from Secrets Manager when done testing.**
-
-# Client
-
-The client is a docker container that uses auto-id to retrieve AWS credentials.
-
-To run the console:
-
-1. Switch to the client directory: `cd client`
-1. Build the docker image: `docker build -t auto-id-client .`
-1. Running the container: The basic run command is `docker run -e AUTO_ID_API_ENDPOINT=<the api endpoint noted in the server deployment> -ti --entrypoint /bin/sh auto-id-client`
-	* For entropy file stored in S3 add the ENTROPY_ACCESS_ID, ENTROPY_SECRET_KEY and AUTO_ID_BUCKET environment variables: `docker run -e ENTROPY_ACCESS_ID=<AWS_KEY_ID> -e ENTROPY_SECRET_KEY=<AWS_SECRET_KEY> -e AUTO_ID_BUCKET=<THE_AUTO_ID_BUCKET_NAME> ...`
-	* For entropy file stored in NPM add the NPM_TOKEN environment variable: `docker run -e NPM_TOKEN=<AWS_KEY_ID> ...`
-1. The docker contains presents the Linux shell prompt
-1. Retrieve the auto-id keys: `./scripts/get-keys.sh`
-1. Retrieve the AWS credentials: `./scripts/get-aws-credentials.sh <SECRET_ID>`. Use the same secret ID used when storing the secret during server deployment. This will run `aws configure` to setup a default profile with the retrieved credentials.
-1. Run aws commands to confirm the credentials have been configured correctly.
-
-# Sample Test Session
-
-```bash
-autonomous-identification $ cd server
-server $ docker build -t auto-id .
----->8----
-$ docker run \
-  -e AWS_ACCESS_KEY_ID=************ \
-  -e AWS_SECRET_ACCESS_KEY=***************** \
-  -e AUTO_ID_BUCKET=auto-id-test \
-  -e AUTO_ID_STACK_NAME=auto-id-test \
-  -e ACTION=deploy auto-id
----->8----
-{
-  "OutputKey": "APIGatewayEndpoint",
-  "OutputValue": "https://**********.execute-api.ap-southeast-2.amazonaws.com",
-  "Description": "API Gateway endpoint"
-}
----->8----
-server $ #
-server $ # TAKE NOTE OF THE OutputValue above. This is the AUTO_ID_API_ENDPOINT value.
-server $ #
-server $ ./scripts/store-secret.sh test-secret-id "test-secret-value1,test-secret-value2" 
----->8----
-{
-    "VersionId": "8f467d4a-9ecb-4262-a96e-5bec132d3bf4", 
-    "Name": "test-secret-id", 
-    "ARN": "arn:aws:secretsmanager:ap-southeast-2:120030542417:secret:test-secret-id-aCntKb"
-}
----->8----
-server $ cd ../client
-client $ docker build -t auto-id-client .
----->8----
-client $ docker run \
-  -e AUTO_ID_API_ENDPOINT=https://********.execute-api.ap-southeast-2.amazonaws.com \
-  -e AUTO_ID_BUCKET=auto-id-test \
-  -e ENTROPY_ACCESS_ID=******** \
-  -e ENTROPY_SECRET_KEY=******** \
-  -ti --entrypoint /bin/sh auto-id-client
-/auto-id-client # ./scripts/get-keys.sh
-download: s3://auto-id-public-repo-test/info2048.bin to ./info2048.bin
-download: s3://auto-id-public-repo-test/public.pem to ./public.pem
-/auto-id-client # ./scripts/get-aws-credentials.sh test-secret-id
-/auto-id-client # cat ~/.aws/credentials 
-[default]
-aws_access_key_id = test-secret-value1
-aws_secret_access_key = test-secret-value2
-/auto-id-client #
-/auto-id-client # # Given valid AWS credentials you could now run AWS CLI commands sucessfully.
-/auto-id-client #
-/auto-id-client # exit
-client $ cd ../server
-server $ docker run \
-  -e AWS_ACCESS_KEY_ID=******** \
-  -e AWS_SECRET_ACCESS_KEY=******** \
-  -e AUTO_ID_BUCKET=auto-id-test \
-  -e AUTO_ID_STACK_NAME=auto-id-test \
-  -e ACTION=destroy auto-id
-server $ #
-server $ # Don't forget to delete any secrets you are not going to be using from Secrets Manager.
-server $ #
-
-
-```
