@@ -1,0 +1,29 @@
+{
+  "name": "@scope/auto-id-keys",
+  "version": "1.0.7",
+  "description": "Autonomous identity service",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orchestrated-io/auto-id.git"
+  },
+  "keywords": [
+    "Autonomous",
+    "identity",
+    "security"
+  ],
+  "files": [
+    "build/info2048.bin",
+    "build/public.pem",
+    "package.json"
+  ],
+  "author": "orchestrated.",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/orchestrated-io/auto-id/issues"
+  },
+  "homepage": "https://github.com/orchestrated-io/auto-id#readme"
+}

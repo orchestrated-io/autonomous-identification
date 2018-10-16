@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+    sam-app
+    Sample SAM Template for sam-app
+Globals:
+    Function:
+        Timeout: 10
+Parameters:
+    AutoIdBucket:
+      Description: The S3 bucket to use for the entropty file and certificates
+      Type: String
+Resources:
+    CryptoFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            Timeout: 10
+            CodeUri: build/
+            Handler: crypto_server.lambda_handler
+            Runtime: python3.6
+            Policies: 
+            - AmazonS3FullAccess
+            - SecretsManagerReadWrite
+            Environment:
+                Variables:
+                    S3_BUCKET_INPUT:
+                        Ref: AutoIdBucket
+                    S3_BUCKET_OUTPUT:
+                        Ref: AutoIdBucket
+            Events:
+                CryptoServer:
+                    Type: Api
+                    Properties:
+                        Path: /verify
+                        Method: post
+Outputs:
+    APIGatewayEndpoint:
+        Description: "API Gateway endpoint"
+        Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com"
