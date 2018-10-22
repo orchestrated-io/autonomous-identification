@@ -1,5 +1,9 @@
 #! /bin/sh -ex
 
+if [ ! -z $NPM_TOKEN ]
+then
+	echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
+fi
 
 mkdir -p build
 ./scripts/get-keys.sh

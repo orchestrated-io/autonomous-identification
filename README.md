@@ -36,7 +36,7 @@ The server runs as an AWS API endpoint retrieving secrets from AWS Secrets Manag
 1. After deploy take note of the API endpoint printed to the console. This endpoint must be provided to the clients requesting credentials from the server.
 1. Optionally [publish the auto-id keys to NPM](#using-a-private-npm-package-for-the-entropy-file)
 1. [Store one or more secrets](#storing-secrets) in AWS Secrets Manager.
-1. Use the [sample clients](#clients) to exercise the server
+1. Use the [sample client](#client) to exercise the server
 
 When deploying the service the optional arguments have the following defaults:
 * ACTION: `deploy`

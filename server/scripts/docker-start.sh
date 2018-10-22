@@ -19,5 +19,9 @@ case $ACTION in
   ./scripts/install-sam.sh
   ./scripts/deploy.sh
   ./scripts/install-keys.sh
+  if [ ! -z $NPM_TOKEN ]
+  then
+    ./scripts/install-keys-npm.sh
+  fi
   ;;
 esac

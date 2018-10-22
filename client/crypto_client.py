@@ -8,8 +8,6 @@ import json
 import hashlib
 from random import randint
 
-url = sys.argv[1]
-credential_source = sys.argv[2]
 MAX_SIZE = 2048
 MAX_SNIPPETS = 4
 
@@ -65,7 +63,7 @@ def get_snippet(data, first_num, second_num, line_number):
 		text_slice = data[second_num:first_num]
 	return text_slice
 
-def send_payload(encrypted_key, aes_payload):
+def send_payload(url, encrypted_key, aes_payload):
 	encrypted_key = bin2hex(encrypted_key).decode('utf-8')
 	aes_payload = bin2hex(aes_payload).decode('utf-8')
 	payload = {
@@ -90,26 +88,25 @@ def generate_hashval(text):
 	hashval = hashlib.sha256(prehashval.encode('utf-8')).hexdigest()
 	return hashval
 
-encrypted_key = rsa.encrypt(key,public_key)
-crypto = AESCipher(key)
-intervals = construct_tuples()
-hashval = generate_hashval(intervals)
+def get_credentials(url, credential_source):
+	encrypted_key = rsa.encrypt(key,public_key)
+	crypto = AESCipher(key)
+	intervals = construct_tuples()
+	hashval = generate_hashval(intervals)
 
-interval_payload = {
-	'hashval': hashval,
-	'intervals': intervals,
-	'credential_source': credential_source
-}
-aes_interval=json.dumps(interval_payload)
-aes_payload = crypto.encrypt(aes_interval)
+	interval_payload = {
+		'hashval': hashval,
+		'intervals': intervals,
+		'credential_source': credential_source
+	}
+	aes_interval=json.dumps(interval_payload)
+	aes_payload = crypto.encrypt(aes_interval)
 
-response = send_payload(encrypted_key, aes_payload)
-if response.status_code == 201:
-	rdict = json.loads(response.text)
-	response = hex2bin(rdict['message'].encode('utf-8'))
-	plaintext = crypto.decrypt(response)
-	print(plaintext)
-else:
-	print('An error occurred')
-	print(response.status_code)
-	print(response.text)
+	response = send_payload(url, encrypted_key, aes_payload)
+	if response.status_code == 201:
+		rdict = json.loads(response.text)
+		response = hex2bin(rdict['message'].encode('utf-8'))
+		plaintext = crypto.decrypt(response)
+		return(plaintext)
+	else:
+		return((' ').join(['An error occurred', str(response.status_code), response.text]))
