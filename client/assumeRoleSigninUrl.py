@@ -14,11 +14,13 @@ assumed_role_object = sts_client.assume_role(
     RoleSessionName=os.environ["ASSUME_ROLE_SESSION_NAME"]
 )
 
-json_string_with_temp_credentials = '{'
-json_string_with_temp_credentials += '"sessionId":"' + assumed_role_object["Credentials"]["AccessKeyId"] + '",'
-json_string_with_temp_credentials += '"sessionKey":"' + assumed_role_object["Credentials"]["SecretAccessKey"] + '",'
-json_string_with_temp_credentials += '"sessionToken":"' + assumed_role_object["Credentials"]["SessionToken"] + '"'
-json_string_with_temp_credentials += '}'
+credentials = {
+	"sessionId":  assumed_role_object["Credentials"]["AccessKeyId"],
+	"sessionKey": assumed_role_object["Credentials"]["SecretAccessKey"],
+	"sessionToken": assumed_role_object["Credentials"]["SessionToken"]
+}
+
+json_string_with_temp_credentials = json.dumps(credentials)
 
 request_parameters = "?Action=getSigninToken"
 request_parameters += "&SessionDuration=43200"
