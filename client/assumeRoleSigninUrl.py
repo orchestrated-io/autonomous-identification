@@ -4,7 +4,7 @@ import requests
 import boto3
 import crypto_client
 
-credentials = crypto_client.get_credentials(("").join([os.environ["AUTO_ID_API_ENDPOINT"], "/Stage/verify"]), os.environ["AUTO_ID_SECRET_NAME"])
+credentials = crypto_client.get_credentials("".join([os.environ["AUTO_ID_API_ENDPOINT"], "/Stage/verify"]), "".join(["secretsmanager,",os.environ["AUTO_ID_SECRET_NAME"]]))
 parts = credentials.split(',')
 
 sts_client = boto3.client('sts', aws_access_key_id=parts[0], aws_secret_access_key=parts[1])

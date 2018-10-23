@@ -77,3 +77,12 @@ def get_credentials(url, credential_source) -> str:
 		return(plaintext)
 	else:
 		return ''.join(['An error occurred', str(response.status_code), response.text])
+
+
+if __name__ == '__main__':
+	try:
+		result = get_credentials(sys.argv[1], sys.argv[2])
+		print(result)
+	except ValueError:
+		print('Use: {0} {1} {2}'.format(sys.argv[0], sys.argv[1], sys.argv[2]))
+		sys.exit(1)

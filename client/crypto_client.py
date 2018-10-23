@@ -76,7 +76,7 @@ def get_credentials(url, credential_source) -> str:
 		plaintext = crypto.decrypt(response)
 		return(plaintext)
 	else:
-		return ''.join(['An error occurred', str(response.status_code), response.text])
+		return ' '.join(['An error occurred:', str(response.status_code), response.text])
 
 
 if __name__ == '__main__':

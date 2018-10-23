@@ -10,19 +10,6 @@ from hash_constructor import generate_hash
 MAX_SNIPPETS = 4
 MAX_SIZE = 2048
 
-try:
-	entropy_data = read_s3(input_path(), 'info2048.bin')
-except FileNotFoundError:
-	print('Cannot read entropy file. Aborting.')
-	sys.exit(1)
-
-try:
-	priv_key = read_s3(input_path(), 'private.pem')
-	private_key = RSA.importKey(priv_key)
-except FileNotFoundError:
-	print('Cannot read private key file. Aborting.')
-	sys.exit(1)
-
 def hex2bin(hexStr: str) -> str:
     return binascii.unhexlify(hexStr)
 
@@ -33,6 +20,19 @@ def generate_hashval(text: str, data: str, max_size: int) -> str:
 	return generate_hash(text, data, max_size)
 
 def lambda_handler(event: dict, context: dict) -> dict:
+	try:
+		entropy_data = read_s3(input_path(), 'info2048.bin')
+	except FileNotFoundError:
+		print('Cannot read entropy file. Aborting.')
+		sys.exit(1)
+
+	try:
+		priv_key = read_s3(input_path(), 'private.pem')
+		private_key = RSA.importKey(priv_key)
+	except FileNotFoundError:
+		print('Cannot read private key file. Aborting.')
+		sys.exit(1)
+
 	rsa = OAEP()
 	payload = event['body']
 	client_data = json.loads(payload)
