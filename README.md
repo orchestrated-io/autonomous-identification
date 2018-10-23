@@ -185,7 +185,7 @@ client $ docker build -t auto-id-client .
 ---->8----
 ```
 
-## Step 6 - Run the client container in interactive mode
+### Step 6 - Run the client container in interactive mode
 
 Note that when using NPM to store keys for the client add the `NPM_TOKEN` and `NPM_SCOPE` environment variables.
 
@@ -228,11 +228,11 @@ server $ #
 ```
 
 
-### Sample Auto-login Test Session
+## Sample Auto-login Test Session
 
 Follow steps 1 to 4 in the sample console session above then run the client.
 
-## Step 1 - Edit the environment variables file
+### Step 1 - Edit the environment variables file
 
 Copy env.list.sample to env.list and edit env.list to set the correct values for each of the listed variables.
 
@@ -255,7 +255,7 @@ ENTROPY_SECRET_KEY=
 AUTO_ID_BUCKET=
 ```
 
-## Step 2 - Run the client to get a login URL
+### Step 2 - Run the client to get a login URL
 
 The sample step assumes auto-id keys are stored in an NPM repository. Use the AUTO_ID_BUCKET and AWS_* environment variables to use the keys stored in S3.
 
