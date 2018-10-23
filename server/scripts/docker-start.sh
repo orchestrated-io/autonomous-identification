@@ -1,6 +1,14 @@
 #! /bin/sh -ex
 ACTION=${ACTION:-deploy}
 
+installKeys () {
+  ./scripts/install-keys.sh
+  if [ ! -z $NPM_TOKEN ]
+  then
+    ./scripts/install-keys-npm.sh
+  fi
+}
+
 cd /auto-id
 
 case $ACTION in
@@ -13,15 +21,11 @@ case $ACTION in
   ./scripts/test.sh
   ;;
 "rotate-keys")
-  ./scripts/install-keys.sh
+  installKeys
   ;;
 *)
   ./scripts/install-sam.sh
   ./scripts/deploy.sh
-  ./scripts/install-keys.sh
-  if [ ! -z $NPM_TOKEN ]
-  then
-    ./scripts/install-keys-npm.sh
-  fi
+  installKeys
   ;;
 esac

@@ -7,8 +7,12 @@ Clients can use the autonomous identification server to obtain credentials at ru
 	- [Try it out](#try-it-out)
 		- [Using a private NPM package for the entropy file](#using-a-private-npm-package-for-the-entropy-file)
 - [Storing Secrets](#storing-secrets)
-- [Client](#client)
-- [Sample Test Session](#sample-test-session)
+- [Clients](#clients)
+	- [Console client](#console-client)
+	- [Auto-login client](#auto-login-client)
+	- [Using the private NPM repository](#using-the-private-npm-repository)
+	- [Sample Console Test Session](#sample-console-test-session)
+	- [Sample Auto-login Test Session](#sample-auto-login-test-session)
 - [Notes](#notes)
 	- [Basic observations for secure use of this code](#basic-observations-for-secure-use-of-this-code)
 	- [The verification flow](#the-verification-flow)
@@ -54,11 +58,10 @@ The auto-id client would require access to the S3 bucket to get the entropy file
 As an alternative the entropy file and server public key can be published as an NPM package. To do this:
 
 1. [Setup private NPM repository](https://docs.npmjs.com/private-modules/intro)
-1. Create a `.npmrc` file in the root of the project
-1. Obtain the NPM token and store it in `.npmrc`: `//registry.npmjs.org/:_authToken=<NPM TOKEN>`
-1. Publish the NPM package: `NPM_SCOPE=<NPM_SCOPE> AUTO_ID_BUCKET=<BUCKET_NAME> ./scripts/install-keys-npm.sh`
-
-The `BUCKET_NAME` here must match that provided during deploy. This script will retrieve the keys from the S3 bucket and package them to be published to NPM.
+1. Run the container with ACTION `deploy` or `rotate-keys` with two additional parameters:
+	* NPM_SCOPE - the NPM package scope
+	* NPM_TOKEN - the NOPM private repository token
+1. The keys will be installed to S3 and to the private NPM repository
 
 # Storing Secrets
 
@@ -72,11 +75,13 @@ For AWS credentials store the access key ID and the secret key in a comma separa
 
 **NOTE: Remember to delete any secrets from Secrets Manager when done testing.**
 
-# Client
+# Clients
 
-The client is a docker container that uses auto-id to retrieve AWS credentials.
+There are two client implementations:
+1. A console client - retrieves credentials through auto-id and configured the local AWS CLI
+1. An auto-login client - retrieves credentials through auto-id, assumes a role, logs into the AWS Management Console and opens a specific service page
 
-To run the console:
+## Console client
 
 1. Switch to the client directory: `cd client`
 1. Build the docker image: `docker build -t auto-id-client .`
@@ -88,16 +93,32 @@ To run the console:
 1. Retrieve the AWS credentials: `./scripts/get-aws-credentials.sh <SECRET_ID>`. Use the same secret ID used when storing the secret during server deployment. This will run `aws configure` to setup a default profile with the retrieved credentials.
 1. Run aws commands to confirm the credentials have been configured correctly.
 
-# Sample Test Session
+## Auto-login client
 
-## Step 1 - Build the server docker image
+1. Switch to the client directory: `cd client`
+1. Build the docker image: `docker build -t auto-id-client .`
+1. Running the container: The basic run command is `docker run -e AUTO_ID_API_ENDPOINT=<the api endpoint noted in the server deployment> -e ASSUME_ROLE_ARN=<the aws role to assume> -e ASSUME_ROLE_SESSION_NAME=<any useful session name> -e VISIT_URL=<the console url to open after logging in> -e AUTO_ID_SECRET_NAME=<the auto-id secret name> --entrypoint ./scripts/get-login-url.sh auto-id-client`
+	* For entropy file stored in S3 add the ENTROPY_ACCESS_ID, ENTROPY_SECRET_KEY and AUTO_ID_BUCKET environment variables: `docker run -e ENTROPY_ACCESS_ID=<AWS_KEY_ID> -e ENTROPY_SECRET_KEY=<AWS_SECRET_KEY> -e AUTO_ID_BUCKET=<THE_AUTO_ID_BUCKET_NAME> ...`
+	* For entropy file stored in NPM add the NPM_TOKEN environment variable: `docker run -e NPM_TOKEN=<AWS_KEY_ID> ...`
+1. The login url script will run and return a URL that can be used in a browser to open the `VISIT_URL`
+
+## Using the private NPM repository
+
+If the auto-id keys have been installed to an NPM repository add the `NPM_SCOPE` and `NPM_TOKEN` environment variables when running the container. The keys will be installed from NPM.
+
+## Sample Console Test Session
+
+### Step 1 - Build the server docker image
 ```shell
 autonomous-identification $ cd server
 server $ docker build -t auto-id .
 ---->8----
 ```
 
-## Step 2 - Run the server container to deploy the server to AWS
+### Step 2 - Run the server container to deploy the server to AWS
+
+Note that when using NPM to store keys for the client add the `NPM_TOKEN` and `NPM_SCOPE` environment variables.
+
 ```shell
 server $ docker run \
   -e AWS_ACCESS_KEY_ID=************ \
@@ -117,7 +138,7 @@ server $ # TAKE NOTE OF THE OutputValue above. This is the AUTO_ID_API_ENDPOINT 
 server $ #
 ```
 
-## Step 3 - Store a sample secret in Secrets Manager
+### Step 3 - Store a sample secret in Secrets Manager
 ```shell
 server $ ./scripts/store-secret.sh test-secret-id "test-secret-value1,test-secret-value2" 
 ---->8----
@@ -129,7 +150,7 @@ server $ ./scripts/store-secret.sh test-secret-id "test-secret-value1,test-secre
 ---->8----
 ```
 
-## Step 4 - Build the client docker image
+### Step 4 - Build the client docker image
 ```shell
 server $ cd ../client
 client $ docker build -t auto-id-client .
@@ -137,6 +158,9 @@ client $ docker build -t auto-id-client .
 ```
 
 ## Step 5 - Run the client container in interactive mode
+
+Note that when using NPM to store keys for the client add the `NPM_TOKEN` and `NPM_SCOPE` environment variables.
+
 ```shell
 client $ docker run \
   -e AUTO_ID_API_ENDPOINT=https://********.execute-api.ap-southeast-2.amazonaws.com \
@@ -146,19 +170,19 @@ client $ docker run \
   -ti --entrypoint /bin/sh auto-id-client
 ```
 
-## Step 6 - Retrieve the auto-id entropy file and server public key
+### Step 6 - Retrieve the auto-id entropy file and server public key
 ```shell
 /auto-id-client # ./scripts/get-keys.sh
 download: s3://auto-id-public-repo-test/info2048.bin to ./info2048.bin
 download: s3://auto-id-public-repo-test/public.pem to ./public.pem
 ```
 
-## Step 7 - Request credentials from the auto-id server
+### Step 7 - Request credentials from the auto-id server
 ```shell
 /auto-id-client # ./scripts/get-aws-credentials.sh test-secret-id
 ```
 
-## Step 8 - Show a profile has been configured
+### Step 8 - Show a profile has been configured
 ```shell
 /auto-id-client # cat ~/.aws/credentials 
 [default]
@@ -170,7 +194,7 @@ aws_secret_access_key = test-secret-value2
 /auto-id-client # exit
 ```
 
-## Step 9 - Destroy the server stack
+### Step 9 - Destroy the server stack
 ```shell
 client $ cd ../server
 server $ docker run \
@@ -182,6 +206,36 @@ server $ docker run \
 server $ #
 server $ # Don't forget to delete any secrets you are not going to be using from Secrets Manager.
 server $ #
+```
+
+
+### Sample Auto-login Test Session
+
+Follow steps 1 to 4 in the sample console session above then run the client.
+
+## Step 1 - Run the client to get a login URL
+
+The sample step assumes auto-id keys are stored in an NPM repository. Use the AUTO_ID_BUCKET and AWS_* environment variables to use the keys stored in S3.
+
+```shell
+server $ docker run \
+  -e AUTO_ID_API_ENDPOINT=https://********.execute-api.ap-southeast-2.amazonaws.com \
+  -e ASSUME_ROLE_ARN=arn:aws:iam::********:role/******** \
+  -e ASSUME_ROLE_SESSION_NAME=SampleSession \
+  -e VISIT_URL=https://ap-southeast-2.console.aws.amazon.com/cloudwatch/home?region=ap-southeast-2#dashboards:name=SomeDashboardName/ \
+  -e AUTO_ID_SECRET_NAME="secrets_manager,********" \
+  -e NPM_TOKEN=******** \
+  -e NPM_SCOPE=******** \
+  --entrypoint "scripts/get-login-url.sh" auto-id-client
++ ./scripts/get-keys.sh
+npm notice created a lockfile as package-lock.json. You should commit this file.
++ @orchestrated-io/auto-id-keys@1.0.11
+added 1 package in 4.943s
++ python assumeRoleSigninUrl.py
+https://signin.aws.amazon.com/federation?Action=login&Issuer=Example.org&Destination=https%3A%2F%2Fap-southeast-2.console.aws.amazon.com%2Fcloudwatch%2Fhome%3Fregion%3Dap-southeast-2%23dashboards%3Aname%3DSomeDashboardName%2F&SigninToken=***-D3ODO_GVGCSspDki8mNBeQLE7ZNw8kNLSXu4XKVEHdRP99rRXPOfsju0JfdGQyAmB9c4PK9t2M74gFbzWlo_nVS7CaQKv-mfuI_kIj44yzJA9BajPLW-hLJ1gB7EO4U4lX0pm7OMqoPyxH2-770g0U7CNcxv-_DIIh1_2R2TFc5-bj0KXdELAZkubW0SW5fl1p5lQt32RxQP3ESfev5Gjcj0ZXzRELYq4I1P2rV1uRlv8xoUO1knIgt_3mLSt43Ixdj0NJUk_duRuQE28ZjwSi8PJcvpWo3G56SLLt6FsqYTpSXdjjFbg42ssLQgxbHvjwxtk5zBieotcND313k0ABKXPnDFe1tg4gvE3UdgCJYMarH1oyJFqVZsh7k8LUVpOkXYKL6ljY0SyfOp19ZzFMcINSO4dKInaCLtT0r5Rz444Ak0pJB5nHyXse87dpdNhuudneeyXEIUjAFRpZbRzjBjpL9mwK5MQAnZaWXhr2bqIqjV1Yib_o0Uo2g_xvMnJuHUhec5dQ1k-54ivR863k9V9xZ55-eIV70QtgGcenmHA63X1xMKGhQzoqbyuBUcM1xS34ik4raeoc0I4wob2GaW6a8HeiWyNTS3LkS50uqhAnZjQDdCl7IlOslQdcr7_gQrZFBLQ7FXQReJd2SaTEWbD_Nzb5yTKqhtrVh_dS1IYG4OSh7LXCjMYCNcAeZnPbZaD29tj8qFEq7zxbn5dWqUlwde5CmAQRdljktZo8XYbmG_uPB7OHoKT_uPl0WlMDSwEd-NjuU0OIY32XsBWD2ms-uDn2Z6NeNCMyH8-qp2obLI1QgQv0Ch50Op4INyX72xbtvlSKgZcccbYZ****
+server $
+server $ # Copy and paste the URL above into a browser to open the management console
+server $
 ```
 
 # Notes

@@ -1,6 +1,6 @@
 {
   "name": "@scope/auto-id-keys",
-  "version": "1.0.7",
+  "version": "1.0.0",
   "description": "Autonomous identity service",
   "main": "index.js",
   "scripts": {

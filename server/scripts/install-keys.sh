@@ -1,5 +1,10 @@
 #! /bin/sh -ex
 
+if [ ! -d build ]
+then
+	mkdir build
+fi
+
 ssh-keygen -q -t rsa -N '' -f /id_rsa
 ./scripts/generate_entropy.sh 2048 > build/info2048.bin
 cp /id_rsa build/private.pem
