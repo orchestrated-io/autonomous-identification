@@ -33,10 +33,10 @@ The server runs as an AWS API endpoint retrieving secrets from AWS Secrets Manag
 1. Switch to the server directory: `cd server`
 1. Build the docker image: `docker build -t auto-id .`
 1. Set up an environment variable file:
-	* Copy the sample file: `cp env.list.sample env.list`
-	* Edit `env.list` and enter the correct values for each of the environment variables
+	* Copy the sample file: `cp config/env.list.sample config/env.list`
+	* Edit `config/env.list` and enter the correct values for each of the environment variables
 	* The `NPM_TOKEN` and `NPM_SCOPE` variables can be left blank when not using a private NPM repository for the auto-id keys
-1. Running the container: The basic run command is `docker run -env-file env.list auto-id`
+1. Running the container: The basic run command is `docker run -env-file config/env.list auto-id`
 	* Deploy the service: `ACTION=deploy`
 	* Run a simple test: `ACTION=test`. Update `CREDENTIAL_SOURCE` if you want to use a secret name other than the default.
 	* Rotate the entropy file and server key pair: `ACTION=rotate-keys`
@@ -90,10 +90,10 @@ There are two client implementations:
 1. Switch to the client directory: `cd client`
 1. Build the docker image: `docker build -t auto-id-client .`
 1. Set up an environment variable file:
-	* Copy the sample file: `cp env.list.sample env.list`
-	* Edit `env.list` and enter the correct values for each of the environment variables
+	* Copy the sample file: `cp config/env.list.sample config/env.list`
+	* Edit `config/env.list` and enter the correct values for each of the environment variables
 	* The `NPM_TOKEN` and `NPM_SCOPE` variables can be left blank when not using a private NPM repository for the auto-id keys
-1. Running the container: The basic run command is `docker run --env-file env.list -ti auto-id-client /bin/sh`
+1. Running the container: The basic run command is `docker run --env-file config/env.list -ti auto-id-client /bin/sh`
 	* For entropy file stored in S3 set the ENTROPY_ACCESS_ID, ENTROPY_SECRET_KEY and AUTO_ID_BUCKET environment variables
 	* For entropy file stored in NPM set the NPM_TOKEN and NPM_SCOPE environment variables
 1. The docker contains presents the Linux shell prompt
@@ -106,10 +106,10 @@ There are two client implementations:
 1. Switch to the client directory: `cd client`
 1. Build the docker image: `docker build -t auto-id-client .`
 1. Set up an environment variable file:
-	* Copy the sample file: `cp env.list.sample env.list`
-	* Edit `env.list` and enter the correct values for each of the environment variables
+	* Copy the sample file: `cp config/env.list.sample config/env.list`
+	* Edit `config/env.list` and enter the correct values for each of the environment variables
 	* The `NPM_TOKEN` and `NPM_SCOPE` variables can be left blank when not using a private NPM repository for the auto-id keys
-1. Running the container: The basic run command is `docker run --env-file env.list auto-id-client ./scripts/get-login-url.sh`
+1. Running the container: The basic run command is `docker run --env-file config/env.list auto-id-client ./scripts/get-login-url.sh`
 	* For entropy file stored in S3 set the ENTROPY_ACCESS_ID, ENTROPY_SECRET_KEY and AUTO_ID_BUCKET environment variables
 	* For entropy file stored in NPM set the NPM_TOKEN and NPM_SCOPE environment variables
 1. The login url script will run and return a URL that can be used in a browser to open the `VISIT_URL`
@@ -129,7 +129,7 @@ server $ docker build -t auto-id .
 
 ### Step 2 - Edit the environment variable file
 
-Copy env.list.sample to env.list and edit env.list to set the correct values for each of the listed variables.
+Copy config/env.list.sample to config/env.list and edit config/env.list to set the correct values for each of the listed variables.
 
 ```shell
 AWS_ACCESS_KEY_ID=************
@@ -153,7 +153,7 @@ ACTION=deploy
 Note that when using NPM to store keys for the client add the `NPM_TOKEN` and `NPM_SCOPE` environment variables.
 
 ```shell
-server $ docker run -env-file env.list auto-id
+server $ docker run -env-file config/env.list auto-id
 ---->8----
 {
   "OutputKey": "APIGatewayEndpoint",
@@ -220,8 +220,8 @@ aws_secret_access_key = test-secret-value2
 ### Step 10 - Destroy the server stack
 ```shell
 client $ cd ../server
-server $ # edit env.list and set ACTION=destroy
-server $ docker run -env-file env.list auto-id
+server $ # edit config/env.list and set ACTION=destroy
+server $ docker run -env-file config/env.list auto-id
 server $ #
 server $ # Don't forget to delete any secrets you are not going to be using from Secrets Manager.
 server $ #
@@ -234,7 +234,7 @@ Follow steps 1 to 4 in the sample console session above then run the client.
 
 ### Step 1 - Edit the environment variables file
 
-Copy env.list.sample to env.list and edit env.list to set the correct values for each of the listed variables.
+Copy config/env.list.sample to config/env.list and edit config/env.list to set the correct values for each of the listed variables.
 
 ```shell
 AUTO_ID_API_ENDPOINT=https://********.execute-api.ap-southeast-2.amazonaws.com
@@ -260,7 +260,7 @@ AUTO_ID_BUCKET=
 The sample step assumes auto-id keys are stored in an NPM repository. Use the AUTO_ID_BUCKET and AWS_* environment variables to use the keys stored in S3.
 
 ```shell
-client $ docker run --env-file env.list auto-id-client ./scripts/get-login-url.sh
+client $ docker run --env-file config/env.list auto-id-client ./scripts/get-login-url.sh
 + ./scripts/get-keys.sh
 npm notice created a lockfile as package-lock.json. You should commit this file.
 + @orchestrated-io/auto-id-keys@1.0.11
