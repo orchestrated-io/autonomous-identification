@@ -31,7 +31,7 @@ The server runs as an AWS API endpoint retrieving secrets from AWS Secrets Manag
 1. [Create an AWS account](https://portal.aws.amazon.com/billing/signup#/start)
 1. [Configure your AWS profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html). This user should have sufficient privileges to deploy the SAM application.
 1. Switch to the server directory: `cd server`
-1. Build the docker image: `docker build -t auto-id .`
+1. Build the docker image from the root directory of the repository: `docker build -t auto-id -f server/Dockerfile .`
 1. Set up an environment variable file:
 	* Copy the sample file: `cp config/env.list.sample config/env.list`
 	* Edit `config/env.list` and enter the correct values for each of the environment variables
@@ -88,7 +88,7 @@ There are two client implementations:
 ## Console client
 
 1. Switch to the client directory: `cd client`
-1. Build the docker image: `docker build -t auto-id-client .`
+1. Build the docker image from the root directory of the repository: `docker build -t auto-id-client -f client/Dockerfile .`
 1. Set up an environment variable file:
 	* Copy the sample file: `cp config/env.list.sample config/env.list`
 	* Edit `config/env.list` and enter the correct values for each of the environment variables

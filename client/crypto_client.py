@@ -37,7 +37,7 @@ def bin2hex(bin_str: str) -> str:
 def rand_string() -> str:
 	return ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase + string.digits, k=16))
 
-def send_payload(url, encrypted_key: bytes, aes_payload: bytes) -> object:
+def send_payload(url: str, encrypted_key: bytes, aes_payload: bytes) -> object:
 	encrypted_key = bin2hex(encrypted_key).decode('utf-8')
 	aes_payload = bin2hex(aes_payload).decode('utf-8')
 	payload = {
@@ -52,7 +52,7 @@ def generate_hashval(text: str, data: str, max_size: int) -> str:
 	return generate_hash(text, data, max_size)
 
 
-def get_credentials(url, credential_source) -> str:
+def get_credentials(url: str, credential_source: str) -> str:
 	rsa = OAEP()
 	key = rand_string()
 
