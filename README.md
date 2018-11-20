@@ -127,7 +127,7 @@ server $ docker build -t auto-id .
 ---->8----
 ```
 
-### Step 2 - Edit the environment variable file
+### Step 2 - Edit the server environment variable file
 
 Copy config/env.list.sample to config/env.list and edit config/env.list to set the correct values for each of the listed variables.
 
@@ -153,7 +153,7 @@ ACTION=deploy
 Note that when using NPM to store keys for the client add the `NPM_TOKEN` and `NPM_SCOPE` environment variables.
 
 ```shell
-server $ docker run -env-file config/env.list auto-id
+server $ docker run --env-file config/env.list auto-id
 ---->8----
 {
   "OutputKey": "APIGatewayEndpoint",
@@ -185,27 +185,50 @@ client $ docker build -t auto-id-client .
 ---->8----
 ```
 
-### Step 6 - Run the client container in interactive mode
+### Step 6 - Edit the client environment variable file
+
+Copy config/env.list.sample to config/env.list and edit config/env.list to set the correct values for each of the listed variables.
+
+```shell
+AUTO_ID_API_ENDPOINT=<Enter the auto id noted in step 3 here>
+  
+# For auto-login
+ASSUME_ROLE_ARN=
+ASSUME_ROLE_SESSION_NAME=
+VISIT_URL=
+AUTO_ID_SECRET_NAME=
+
+# For entropy file stored in NPM
+NPM_TOKEN=
+NPM_SCOPE=
+
+# For entropy file stored in S3
+ENTROPY_ACCESS_ID=
+ENTROPY_SECRET_KEY=
+AUTO_ID_BUCKET=
+```
+
+### Step 7 - Run the client container in interactive mode
 
 Note that when using NPM to store keys for the client add the `NPM_TOKEN` and `NPM_SCOPE` environment variables.
 
 ```shell
-client $ docker run -ti auto-id-client /bin/sh
+client $ docker run -ti --env-file config/env.list auto-id-client /bin/sh
 ```
 
-### Step 7 - Retrieve the auto-id entropy file and server public key
+### Step 8 - Retrieve the auto-id entropy file and server public key
 ```shell
 /auto-id-client # ./scripts/get-keys.sh
 download: s3://auto-id-public-repo-test/info2048.bin to ./info2048.bin
 download: s3://auto-id-public-repo-test/public.pem to ./public.pem
 ```
 
-### Step 8 - Request credentials from the auto-id server
+### Step 9 - Request credentials from the auto-id server
 ```shell
 /auto-id-client # ./scripts/get-aws-credentials.sh test-secret-id
 ```
 
-### Step 9 - Show a profile has been configured
+### Step 10 - Show a profile has been configured
 ```shell
 /auto-id-client # cat ~/.aws/credentials 
 [default]
@@ -217,11 +240,11 @@ aws_secret_access_key = test-secret-value2
 /auto-id-client # exit
 ```
 
-### Step 10 - Destroy the server stack
+### Step 11 - Destroy the server stack
 ```shell
 client $ cd ../server
 server $ # edit config/env.list and set ACTION=destroy
-server $ docker run -env-file config/env.list auto-id
+server $ docker run --env-file config/env.list auto-id
 server $ #
 server $ # Don't forget to delete any secrets you are not going to be using from Secrets Manager.
 server $ #
