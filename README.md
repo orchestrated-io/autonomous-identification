@@ -13,6 +13,7 @@ Clients can use the autonomous identification server to obtain credentials at ru
 	- [Using the private NPM repository](#using-the-private-npm-repository)
 	- [Sample Console Test Session](#sample-console-test-session)
 	- [Sample Auto-login Test Session](#sample-auto-login-test-session)
+	- [Windows 10 Auto-login Setup](#windows-10-auto-login-setup)
 - [Notes](#notes)
 	- [Basic observations for secure use of this code](#basic-observations-for-secure-use-of-this-code)
 	- [The verification flow](#the-verification-flow)
@@ -36,7 +37,7 @@ The server runs as an AWS API endpoint retrieving secrets from AWS Secrets Manag
 	* Copy the sample file: `cp config/env.list.sample config/env.list`
 	* Edit `config/env.list` and enter the correct values for each of the environment variables
 	* The `NPM_TOKEN` and `NPM_SCOPE` variables can be left blank when not using a private NPM repository for the auto-id keys
-1. Running the container: The basic run command is `docker run -env-file config/env.list auto-id`
+1. Running the container: The basic run command is `docker run --env-file config/env.list auto-id`
 	* Deploy the service: `ACTION=deploy`
 	* Run a simple test: `ACTION=test`. Update `CREDENTIAL_SOURCE` if you want to use a secret name other than the default.
 	* Rotate the entropy file and server key pair: `ACTION=rotate-keys`
@@ -294,6 +295,25 @@ client $
 client $ # Copy and paste the URL above into a browser to open the management console
 client $
 ```
+
+## Windows 10 Auto-login Setup 
+
+Follow these stes to run clients in a Windows 10 environment:
+
+1. Install python.
+	* Visit [python.org](https://www.python.org/downloads/windows/)
+	* Install the Python 3.6.6 Windows executable installer for your architected
+	* Follow the prompts to complete the install
+	* Update your PATH environment variable to pip and python
+1. Install PyCryptoDome - `pip install pycryptodomex`
+1. If using NPM for auto-id keys then install npm
+	* Visit the [Node.js downloads page](https://nodejs.org/en/download/)
+	* Insall the Windows installer (msi)
+	* Follow the prompts to complete the install
+	* Update your PATH environment variable to include npm
+1. Clone the repo
+1. Confirm the environment variables are setup as described in [Auto-login client](#auto-login-client)
+1. Execute the [showDashboard](./client/scripts/showDashboard.bat) batch file
 
 # Notes
 
