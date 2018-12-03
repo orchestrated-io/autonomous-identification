@@ -36,7 +36,7 @@ The server runs as an AWS API endpoint retrieving secrets from AWS Secrets Manag
 1. Set up an environment variable file:
 	* Copy the sample file: `cp config/env.list.sample config/env.list`
 	* Edit `config/env.list` and enter the correct values for each of the environment variables
-	* The `NPM_TOKEN` and `NPM_SCOPE` variables can be left blank when not using a private NPM repository for the auto-id keys
+	* The `NPM_TOKEN`, `NPM_SCOPE` and `NPM_PACKAGE` variables can be left blank when not using a private NPM repository for the auto-id keys
 1. Running the container: The basic run command is `docker run --env-file config/env.list auto-id`
 	* Deploy the service: `ACTION=deploy`
 	* Run a simple test: `ACTION=test`. Update `CREDENTIAL_SOURCE` if you want to use a secret name other than the default.
@@ -65,6 +65,7 @@ As an alternative the entropy file and server public key can be published as an 
 1. [Setup private NPM repository](https://docs.npmjs.com/private-modules/intro)
 1. Run the container with ACTION `deploy` or `rotate-keys` with two additional parameters:
 	* NPM_SCOPE - the NPM package scope
+	* NPM_PACKAGE - the NPM package name
 	* NPM_TOKEN - the NPM private repository token
 1. The keys will be installed to S3 and to the private NPM repository
 
@@ -93,10 +94,10 @@ There are two client implementations:
 1. Set up an environment variable file:
 	* Copy the sample file: `cp config/env.list.sample config/env.list`
 	* Edit `config/env.list` and enter the correct values for each of the environment variables
-	* The `NPM_TOKEN` and `NPM_SCOPE` variables can be left blank when not using a private NPM repository for the auto-id keys
+	* The `NPM_TOKEN`, `NPM_SCOPE` and `NPM_PACKAGE` variables can be left blank when not using a private NPM repository for the auto-id keys
 1. Running the container: The basic run command is `docker run --env-file config/env.list -ti auto-id-client /bin/sh`
 	* For entropy file stored in S3 set the ENTROPY_ACCESS_ID, ENTROPY_SECRET_KEY and AUTO_ID_BUCKET environment variables
-	* For entropy file stored in NPM set the NPM_TOKEN and NPM_SCOPE environment variables
+	* For entropy file stored in NPM set the NPM_TOKEN, NPM_SCOPE and NPM_PACKAGE environment variables
 1. The docker contains presents the Linux shell prompt
 1. Retrieve the auto-id keys: `./scripts/get-keys.sh`
 1. Retrieve the AWS credentials: `./scripts/get-aws-credentials.sh <SECRET_ID>`. Use the same secret ID used when storing the secret during server deployment. This will run `aws configure` to setup a default profile with the retrieved credentials.
@@ -109,10 +110,10 @@ There are two client implementations:
 1. Set up an environment variable file:
 	* Copy the sample file: `cp config/env.list.sample config/env.list`
 	* Edit `config/env.list` and enter the correct values for each of the environment variables
-	* The `NPM_TOKEN` and `NPM_SCOPE` variables can be left blank when not using a private NPM repository for the auto-id keys
+	* The `NPM_TOKEN`, `NPM_SCOPE` and `NPM_PACKAGE` variables can be left blank when not using a private NPM repository for the auto-id keys
 1. Running the container: The basic run command is `docker run --env-file config/env.list auto-id-client ./scripts/get-login-url.sh`
 	* For entropy file stored in S3 set the ENTROPY_ACCESS_ID, ENTROPY_SECRET_KEY and AUTO_ID_BUCKET environment variables
-	* For entropy file stored in NPM set the NPM_TOKEN and NPM_SCOPE environment variables
+	* For entropy file stored in NPM set the NPM_TOKEN, NPM_SCOPE and NPM_PACKAGE environment variables
 1. The login url script will run and return a URL that can be used in a browser to open the `VISIT_URL`
 
 ## Using the private NPM repository
@@ -143,6 +144,7 @@ CREDENTIAL_SOURCE=auto-id-test-secret
 
 # To publish entropy file and server public key to private NPM repository
 NPM_SCOPE=
+NPM_PACKAGE=
 NPM_TOKEN=
 
 # ACTION is one of deploy, rotate-keys, test or destroy
@@ -151,7 +153,7 @@ ACTION=deploy
 
 ### Step 3 - Run the server container to deploy the server to AWS
 
-Note that when using NPM to store keys for the client add the `NPM_TOKEN` and `NPM_SCOPE` environment variables.
+Note that when using NPM to store keys for the client add the `NPM_TOKEN`, `NPM_SCOPE` and `NPM_PACKAGE` environment variables.
 
 ```shell
 server $ docker run --env-file config/env.list auto-id
@@ -202,6 +204,7 @@ AUTO_ID_SECRET_NAME=
 # For entropy file stored in NPM
 NPM_TOKEN=
 NPM_SCOPE=
+NPM_PACKAGE=
 
 # For entropy file stored in S3
 ENTROPY_ACCESS_ID=
@@ -211,7 +214,7 @@ AUTO_ID_BUCKET=
 
 ### Step 7 - Run the client container in interactive mode
 
-Note that when using NPM to store keys for the client add the `NPM_TOKEN` and `NPM_SCOPE` environment variables.
+Note that when using NPM to store keys for the client add the `NPM_TOKEN`, `NPM_SCOPE` and `NPM_PACKAGE` environment variables.
 
 ```shell
 client $ docker run -ti --env-file config/env.list auto-id-client /bin/sh
@@ -272,6 +275,7 @@ AUTO_ID_SECRET_NAME=********
 # For entropy file stored in NPM
 NPM_TOKEN=
 NPM_SCOPE=
+NPM_PACKAGE=
 
 # For entropy file stored in S3
 ENTROPY_ACCESS_ID=
@@ -298,13 +302,13 @@ client $
 
 ## Windows 10 Auto-login Setup 
 
-Follow these stes to run clients in a Windows 10 environment:
+Follow these steps to run clients in a Windows 10 environment:
 
 1. Install python.
 	* Visit [python.org](https://www.python.org/downloads/windows/)
 	* Install the Python 3.6.6 Windows executable installer for your architected
 	* Follow the prompts to complete the install
-	* Update your PATH environment variable to pip and python
+	* Update your PATH environment variable to include pip and python
 1. Install PyCryptoDome - `pip install pycryptodomex`
 1. If using NPM for auto-id keys then install npm
 	* Visit the [Node.js downloads page](https://nodejs.org/en/download/)
