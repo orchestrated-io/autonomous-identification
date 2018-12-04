@@ -5,7 +5,7 @@ COPY . /auto-id-client
 WORKDIR /auto-id-client
 
 RUN apk update
-RUN apk add build-base npm
+RUN apk add bash build-base npm
 
 RUN pip install --upgrade pip
 ENV PATH="/root/.local/bin:${PATH}"
